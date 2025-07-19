@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কোষ ও একটি আদর্শ উদ্ভিদ কোষের গঠন-1</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "প্রকৃত কোষ বিষয়ে কোনটি সঠিক?",
+          options: {
+            A: "নিউক্লিয় বস্তুটি ক্রোমোসোম",
+            B: "অপেরনতন্ত্র বিদ্যমান",
+            C: "শ্বসন প্রক্রিয়া সবাত এবং অবাত",
+            E: "নিউক্লিয় বস্তুটি নিউক্লিওয়েড বা DNA",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রকৃত কোষ বা ইউক্যারিওটিক কোষে সুস্পষ্ট নিউক্লিয়াস বিদ্যমান এবং নিউক্লিয়াসের অভ্যন্তরে নিউক্লিয় বস্তুটি ক্রোমোসোম নামে পরিচিত, যা DNA এবং প্রোটিন দিয়ে গঠিত। অপেরনতন্ত্র মূলত আদিকোষে (প্রোক্যারিওটিক কোষে) জিন নিয়ন্ত্রণের একক হিসেবে দেখা যায়। ইউক্যারিওটিক কোষে শ্বসন প্রধানত সবাত প্রকৃতির, যদিও কিছু ক্ষেত্রে অবাত শ্বসনও ঘটতে পারে। আদিকোষে নিউক্লিয় বস্তু নিউক্লিওয়েড নামে পরিচিত, যা সাইটোপ্লাজমে ছড়ানো থাকে এবং কোনো ঝিল্লি দ্বারা আবদ্ধ থাকে না।</p>",
+        },
+        {
+          id: 2,
+          question: "দেহকোষের ক্ষেত্রে কোনটি সঠিক?",
+          options: {
+            A: "মিওসিস পদ্ধতিতে কোষ বৃদ্ধি করে",
+            B: "মিউটেশনের মাধ্যমে সন্তানে সঞ্চারিত হয়",
+            C: "হ্যাপ্লয়েড সংখ্যক ক্রোমোসোম থাকে",
+            D: "দেহের বিভিন্ন কোষে বিভেদিত হতে পারে",
+          },
+          correct: "D",
+          explanation:
+            "<p>দেহকোষ বা সোমাটিক কোষ মাইটোসিস প্রক্রিয়ায় বিভাজিত হয়ে দেহের বৃদ্ধি ঘটায়। মিউটেশন দেহকোষে ঘটলে ব্যক্তির দেহেই সীমাবদ্ধ থাকে এবং সাধারণত জননকোষে না ঘটলে সন্তানে সঞ্চারিত হয় না। দেহকোষে ডিপ্লয়েড (2n) সংখ্যক ক্রোমোসোম থাকে, হ্যাপ্লয়েড (n) নয়। তবে, দেহকোষ বিশেষ প্রক্রিয়ার মাধ্যমে বিভেদিত হয়ে বিভিন্ন আকার ও আকৃতির এবং ভিন্ন ভিন্ন কার্যকারিতার কোষে পরিণত হতে পারে।</p>",
+        },
+        {
+          id: 3,
+          question: "নিচের কোন জীবে আদিকোষ থাকে?",
+          options: {
+            A: "ব্রায়োফাইটস",
+            B: "ছত্রাক",
+            C: "শৈবাল",
+            D: " ব্যাকটেরিয়া",
+          },
+          correct: "d",
+          explanation:
+            "<p>আদিকোষ বা প্রোক্যারিওটিক কোষ হলো সেইসব কোষ যাদের সুগঠিত নিউক্লিয়াস এবং অন্যান্য ঝিল্লিযুক্ত অঙ্গাণু অনুপস্থিত। ব্যাকটেরিয়া হলো প্রোক্যারিওটিক জীব। ব্রায়োফাইটস (মস), ছত্রাক এবং শৈবাল হলো ইউক্যারিওটিক জীব, অর্থাৎ এদের কোষে সুস্পষ্ট নিউক্লিয়াস ও ঝিল্লিযুক্ত অঙ্গাণু বিদ্যমান।</p>",
+        },
+        {
+          id: 4,
+          question: "প্রোক্যারিয়টা উদ্ভিদের বৈশিষ্ট্য নয় কোনটি?",
+          options: {
+            A: "রাইবোসোম ছাড়া অন্য কোনো আবরণী বেষ্টিত ক্ষুদ্রাঙ্গ নেই",
+            B: "সুনির্দিষ্ট নিউক্লিয়াস আছে",
+            C: "সালোকসংশ্লেষণের জন্য সুগঠিত প্লাস্টিড নেই",
+            D: "অ্যামাইটোসিস পদ্ধতিতে কোষ বিভাজন সম্পন্ন হয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>প্রোক্যারিওটা (আদিকোষী) উদ্ভিদের প্রধান বৈশিষ্ট্য হলো এদের কোষে সুনির্দিষ্ট নিউক্লিয়াসের অভাব। এদের জেনেটিক বস্তু সাইটোপ্লাজমে নিউক্লিওয়েড নামক অঞ্চলে ছড়ানো থাকে এবং কোনো নিউক্লিয়ার ঝিল্লি দ্বারা আবদ্ধ থাকে না। প্রোক্যারিওটিক কোষে রাইবোসোম নামক অঙ্গাণু থাকলেও, মাইটোকন্ড্রিয়া, ক্লোরোপ্লাস্টের মতো ঝিল্লিযুক্ত অঙ্গাণু অনুপস্থিত। সালোকসংশ্লেষণকারী প্রোক্যারিওটে ক্লোরোফিল থাকে তবে কোনো সুগঠিত প্লাস্টিড থাকে না। এদের কোষ বিভাজন অ্যামাইটোসিস বা দ্বিখণ্ডন প্রক্রিয়ায় সম্পন্ন হয়।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "নিম্নের কোন উক্তিটি ইউক্যারিওটিক নিউক্লিয়াসের বেলায় প্রযোজ্য নয়?",
+          options: {
+            A: "কোষের সকল প্রকার কার্য নিয়ন্ত্রণ করে",
+            B: "ইহা কোষস্থ সাইটোপ্লাজমে অবস্থিত একটি বিশেষ অংশ",
+            C: "একাধিক ক্রোমোসোম থাকে",
+            D: "ইহা ঝিল্লি দ্বারা আবৃত",
+          },
+          correct: "B",
+          explanation:
+            "<p>ইউক্যারিওটিক নিউক্লিয়াস কোষের জেনেটিক বস্তু ধারণ করে এবং কোষের বিপাকসহ সকল প্রকার কার্যকারিতা নিয়ন্ত্রণ করে। এটি একটি দ্বিস্তর বিশিষ্ট ঝিল্লি (নিউক্লিয়ার মেমব্রেন) দ্বারা আবৃত থাকে। ইউক্যারিওটিক নিউক্লিয়াসে সাধারণত একাধিক ক্রোমোসোম থাকে। তবে, নিউক্লিয়াস কোষের সাইটোপ্লাজমে অবস্থিত হলেও এটি কোনো &quot;বিশেষ অংশ&quot; নয় বরং একটি স্বতন্ত্র এবং গুরুত্বপূর্ণ অঙ্গাণু যা ঝিল্লি দ্বারা সাইটোপ্লাজম থেকে আলাদা থাকে।</p>",
+        },
+        {
+          id: 6,
+          question: "কোষ আবিষ্কার করেন কে?",
+          options: {
+            A: "লিউয়েন হুক",
+            B: "রবার্ট হুক",
+            C: "রবার্ট ব্রাউন",
+            D: "রবার্ট ডারউইন",
+          },
+          correct: "B",
+          explanation:
+            "<p>১৬৬৫ সালে বিজ্ঞানী রবার্ট হুক একটি মৃত কর্কের পাতলা ছেদ পর্যবেক্ষণ করার সময় মৌচাকের মতো ছোট ছোট কুঠুরি দেখতে পান এবং এই কুঠুরিগুলোকে তিনি &quot;কোষ&quot; (Cell) নামে অভিহিত করেন। লিউয়েন হুক জীবিত কোষ পর্যবেক্ষণ করেন, রবার্ট ব্রাউন নিউক্লিয়াস আবিষ্কার করেন এবং রবার্ট ডারউইন বিবর্তন তত্ত্বের জন্য বিখ্যাত।</p>",
+        },
+        {
+          id: 7,
+          question: "নিচের কোনটি সাইটোপ্লাজমীয় নির্জীব বস্তু?",
+          options: {
+            A: "রাইবোসোম",
+            B: "লাইসোসোম",
+            C: "এনজাইম",
+            D: "প্লাস্টিড",
+          },
+          correct: "C",
+          explanation:
+            "<p>সাইটোপ্লাজমীয় নির্জীব বস্তু বলতে বোঝায় সেইসব উপাদান যা কোষের অভ্যন্তরে তৈরি হয় কিন্তু জীবন্ত অঙ্গাণুর অংশ নয়। এনজাইম হলো প্রোটিন যা কোষের বিভিন্ন রাসায়নিক বিক্রিয়াকে অনুঘটন করে। রাইবোসোম প্রোটিন সংশ্লেষণকারী অঙ্গাণু, লাইসোসোম কোষের পরিপাককারী অঙ্গাণু এবং প্লাস্টিড উদ্ভিদকোষের খাদ্য প্রস্তুত ও সঞ্চয়কারী অঙ্গাণু। এগুলো সবই জীবন্ত অঙ্গাণু।</p>",
+        },
+        {
+          id: 8,
+          question: "জীবদেহের জৈবিক কার্যকলাপের একক কী?",
+          options: {
+            A: "অঙ্গ",
+            B: "টিস্যু",
+            C: "জীবকোষ",
+            D: "কোষপর্দা",
+          },
+          correct: "C",
+          explanation:
+            "<p>জীবকোষ হলো জীবদেহের গঠন ও কার্যাত্মক একক। জীবদেহের সকল জৈবিক কার্যকলাপ, যেমন বিপাক, বৃদ্ধি, প্রজনন ইত্যাদি কোষের অভ্যন্তরেই সম্পন্ন হয়। একাধিক কোষ মিলিত হয়ে টিস্যু, টিস্যু মিলিত হয়ে অঙ্গ এবং অঙ্গ মিলিত হয়ে তন্ত্র গঠন করে। কোষপর্দা কোষের বাইরের আবরণী যা কোষের অভ্যন্তরকে রক্ষা করে এবং বিভিন্ন পদার্থের চলাচল নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 9,
+          question: "Cell শব্দটি কোন ভাষা থেকে এসেছে?",
+          options: {
+            A: "গ্রীক",
+            B: "ল্যাটিন",
+            C: "সুইডিশ",
+            D: "ইংরেজি",
+          },
+          correct: "B",
+          explanation:
+            "<p>&quot;Cell&quot; শব্দটি ল্যাটিন শব্দ &quot;cella&quot; থেকে এসেছে, যার অর্থ &quot;ছোট কক্ষ&quot; বা &quot;প্রকোষ্ঠ&quot;। রবার্ট হুক কর্কের যে ছোট ছোট কুঠুরিগুলো দেখেছিলেন, সেগুলোর সাথে তুলনা করেই এই নামকরণ করেছিলেন।</p>",
+        },
+        {
+          id: 10,
+          question: "পর্দাবিহীন সাইটোপ্লাজমীয় অঙ্গাণু কোনটি?",
+          options: {
+            A: "রাইবোসোম",
+            B: "গলজি বস্তু",
+            C: "লাইসোসোম",
+            D: "মাইটোকন্ড্রিয়া",
+          },
+          correct: "A",
+          explanation:
+            "<p>রাইবোসোম হলো পর্দাবিহীন সাইটোপ্লাজমীয় অঙ্গাণু যা প্রোটিন সংশ্লেষণে অংশ নেয়। এটি দুটি উপ-একক নিয়ে গঠিত এবং কোনো ঝিল্লি দ্বারা আবৃত থাকে না। গলজি বস্তু, লাইসোসোম এবং মাইটোকন্ড্রিয়া প্রত্যেকেই ঝিল্লিযুক্ত অঙ্গাণু।</p>",
+        },
+        {
+          id: 11,
+          question: "কোন বিজ্ঞানীগণ কোষতত্ত্ব দেন?",
+          options: {
+            A: "স্লাইখার ও কলিকার",
+            B: "সিঙ্গার ও নিকলসন",
+            C: "স্নাইডেন ও সোয়ান",
+            D: "ভ্যানডার কক ও গ্রিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>১৮৩৮ সালে উদ্ভিদবিজ্ঞানী ম্যাথিয়াস শ্লাইডেন এবং ১৮৩৯ সালে প্রাণিবিজ্ঞানী থিওডর সোয়ান কোষতত্ত্ব (Cell Theory) প্রদান করেন। এই তত্ত্ব অনুসারে, সকল জীব কোষ এবং কোষের উৎপাদ দ্বারা গঠিত।</p>",
+        },
+        {
+          id: 12,
+          question: "কোনটি আদিকোষী রাইবোসোমের উপ-একক?",
+          options: {
+            A: "60S + 40S",
+            B: "50S + 40S",
+            C: "70S + 50S",
+            D: "50S + 30S",
+          },
+          correct: "D",
+          explanation:
+            "<p>আদিকোষী (প্রোক্যারিওটিক) রাইবোসোম ৭০S প্রকৃতির, যা দুটি উপ-একক নিয়ে গঠিত: একটি বৃহত্তর ৫০S উপ-একক এবং একটি ক্ষুদ্রতর ৩০S উপ-একক। ইউক্যারিওটিক রাইবোসোম ৮০S প্রকৃতির এবং এর উপ-একক হলো ৬০S ও ৪০S।</p>",
+        },
+        {
+          id: 13,
+          question: "আদিকোষী জীব কোনটি?",
+          options: {
+            A: "ইস্ট",
+            B: "অ্যামিবা",
+            C: "প্লাজমোডিয়াম",
+            D: "মাইকোপ্লাজমা",
+          },
+          correct: "D",
+          explanation:
+            "<p>মাইকোপ্লাজমা হলো ক্ষুদ্রতম আদিকোষী জীব যার কোনো কোষ প্রাচীর নেই। ইস্ট হলো একককোষী ছত্রাক, অ্যামিবা একককোষী প্রোটোজোয়া এবং প্লাজমোডিয়াম ম্যালেরিয়া পরজীবী - এরা সকলেই ইউক্যারিওটিক জীব।</p>",
+        },
+        {
+          id: 14,
+          question: "কোনটি সঠিক?",
+          options: {
+            A: "আদিকোষী = ডিম্বাণু",
+            B: "লিফরোল = ব্যাকটেরিয়া",
+            C: "অ্যাপ্লানোস্পোর",
+            D: "ব্যাখ্যাঃ ডিম্বাণু প্রকৃতকোষী, অ্যাপ্লানোস্পোর নিশ্চল কোষ এবং লিফরোল এক ধরণের ভাইরাস",
+          },
+          correct: "D",
+          explanation:
+            "<p>অপশন (A) ভুল, কারণ ডিম্বাণু একটি প্রকৃতকোষী জননকোষ। অপশন (B) ভুল, কারণ লিফরোল কোনো ব্যাকটেরিয়া নয়, বরং এটি লতানো কাণ্ডযুক্ত পাতাযুক্ত এক প্রকার সপুষ্পক উদ্ভিদ। অপশন (C) অ্যাপ্লানোস্পোর হলো কিছু শৈবাল ও ছত্রাকের নিশ্চল, flagella-বিহীন অযৌন রেণু। অপশন (D)-এর ব্যাখ্যায় সঠিক তথ্য দেওয়া হয়েছে: ডিম্বাণু ইউক্যারিওটিক কোষ, অ্যাপ্লানোস্পোর হলো নিশ্চল রেণু এবং লিফরোল হলো এক প্রকার ভাইরাস।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোনটি ডিপ্লয়েড কোষ?",
+          options: {
+            A: "স্পোর",
+            B: "ডিম্বাণু",
+            C: "ওস্পোর",
+            D: "পরাগরেণু",
+          },
+          correct: "C",
+          explanation:
+            "<p>ডিপ্লয়েড কোষ হলো সেই কোষ যাতে ক্রোমোসোমের দুটি সেট (2n) বিদ্যমান থাকে। স্পোর সাধারণত হ্যাপ্লয়েড (n) হয়, যা অযৌন জননের মাধ্যমে গঠিত হয়। ডিম্বাণু হলো স্ত্রী জননকোষ এবং এটিও হ্যাপ্লয়েড (n)। পরাগরেণু হলো উদ্ভিদের পুরুষ জননকোষ এবং এটিও হ্যাপ্লয়েড (n)। ওস্পোর হলো নিষিক্ত ডিম্বাণু (জাইগোট) যা দুটি হ্যাপ্লয়েড গ্যামেটের (ডিম্বাণু ও শুক্রাণু) মিলনের ফলে গঠিত হয় এবং তাই এটি ডিপ্লয়েড (2n)।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+              <label class="option" data-option="${option}">
+                <div class="circle">${option}</div>
+                <span class="option-text">${question.options[option]}</span>
+              </label>
+            `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                 <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                 <div class="explanation-content">
+                   <div class="explanation-label">ব্যাখ্যা:</div>
+                   ${question.explanation}
+                 </div>
+               </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+            <p class="question-label">${index + 1}. ${question.question}</p>
+            <div class="options">
+              ${optionsHTML}
+            </div>
+            ${explanationHTML}
+          `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
