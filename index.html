@@ -87,12 +87,12 @@
         background-color: #f9f9f9;
         border-radius: 15px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        display: none; /* Default state: hidden */
+        display: none;
         padding: 10px;
       }
 
       .chart-container.visible {
-        display: block; /* Overrides 'display: none' to make it visible */
+        display: block;
       }
 
       .question-container {
@@ -369,20 +369,13 @@
         </p>
         <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
         <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
-        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
-          <input type="hidden" name="userID" id="formUserID" />
-          <input type="hidden" name="finalScore" id="formFinalScore" />
-          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
-          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
-          <input type="hidden" name="unanswered" id="formUnanswered" />
-          <button
-            type="submit"
-            class="confirm-btn"
-            style="background-color: #1b0b54"
-          >
-            <b>ওকে</b>
-          </button>
-        </form>
+        <button
+          class="confirm-btn"
+          onclick="window.location.reload();"
+          style="background-color: #1b0b54"
+        >
+          <b>আবার চেষ্টা করো</b>
+        </button>
       </div>
     </div>
 
@@ -411,6 +404,7 @@
           return;
         }
         try {
+          // You may want to remove these lines if you don't need session storage at all
           sessionStorage.setItem("isLoggedIn", "true");
           sessionStorage.setItem("userID", "anonymous");
           console.log(
@@ -423,15 +417,6 @@
         console.log("Exam container displayed");
         startTimer();
         generateQuestions();
-
-        window.addEventListener("beforeunload", function (event) {
-          if (
-            examContainer.style.display === "block" &&
-            sessionStorage.getItem("isLoggedIn") === "true"
-          ) {
-            autoSubmitScore();
-          }
-        });
       });
 
       const questions = [
@@ -731,7 +716,10 @@
           const questionDiv = document.createElement("div");
           questionDiv.classList.add("question-container");
           questionDiv.setAttribute("data-question", question.id);
-          questionDiv.setAttribute("data-correct", question.correct.toUpperCase()); // Corrected here: standardizing correct answer to uppercase
+          questionDiv.setAttribute(
+            "data-correct",
+            question.correct.toUpperCase()
+          );
 
           let optionsHTML = "";
           for (let option in question.options) {
@@ -953,7 +941,7 @@
 
           if (selectedOption) {
             answered++;
-            let chosenAnswer = selectedOption.getAttribute("data-option").toUpperCase(); // Corrected here: standardizing chosen answer to uppercase
+            let chosenAnswer = selectedOption.getAttribute("data-option").toUpperCase();
             if (chosenAnswer === correctAnswer) {
               score += 1;
               correct++;
@@ -977,19 +965,11 @@
         document.getElementById("unanswered").innerText = toBengaliNumber(unanswered);
         document.getElementById("finalScore").innerText = toBengaliNumber(score.toFixed(2));
 
-        // Populate hidden form fields for submission
-        const userID = sessionStorage.getItem("userID") || "anonymous";
-        document.getElementById("formUserID").value = userID;
-        document.getElementById("formFinalScore").value = score.toFixed(2);
-        document.getElementById("formCorrectAnswers").value = correct;
-        document.getElementById("formWrongAnswers").value = wrong;
-        document.getElementById("formUnanswered").value = unanswered;
-
         // Hide confirm popup and show score popup
         document.getElementById("confirmPopup").style.display = "none";
         document.getElementById("scorePopup").style.display = "block";
 
-        // **The fix:** Make the chart visible
+        // The fix: Make the chart visible
         document.querySelector(".chart-container").classList.add("visible");
 
         // Initialize and update the chart
