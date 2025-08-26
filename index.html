@@ -2,9 +2,11 @@
 <html lang="bn">
   <head>
     <script>
+      // Prevents right-click context menu
       document.addEventListener("contextmenu", (event) =>
         event.preventDefault()
       );
+      // Prevents keyboard shortcuts for developer tools and saving
       document.addEventListener("keydown", (event) => {
         if (
           (event.ctrlKey &&
@@ -19,8 +21,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Online Exam</title>
-    <!-- Chart.js CDN -->
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
@@ -87,12 +87,12 @@
         background-color: #f9f9f9;
         border-radius: 15px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        display: none;
+        display: none; /* Default state: hidden */
         padding: 10px;
       }
 
       .chart-container.visible {
-        display: block;
+        display: block; /* Overrides 'display: none' to make it visible */
       }
 
       .question-container {
@@ -342,8 +342,7 @@
           <canvas id="scoreChart"></canvas>
         </div>
         <div id="exam">
-          <!-- Questions will be generated dynamically -->
-        </div>
+          </div>
         <button id="submitBtn">সাবমিট</button>
       </div>
     </div>
@@ -353,7 +352,7 @@
       <div class="popup-body">
         <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
         <p>
-          <strong>উত্তর দিয়েছো:</strong>
+          <strong>উত্তর দিয়েছো:</strong>
           <span style="color: #000000" id="answered"></span>
         </p>
         <p>
@@ -368,7 +367,7 @@
           <strong>অনুত্তরিত:</strong>
           <span style="color: #ffc801" id="unanswered"></span>
         </p>
-        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
         <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
         <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
           <input type="hidden" name="userID" id="formUserID" />
@@ -732,7 +731,7 @@
           const questionDiv = document.createElement("div");
           questionDiv.classList.add("question-container");
           questionDiv.setAttribute("data-question", question.id);
-          questionDiv.setAttribute("data-correct", question.correct);
+          questionDiv.setAttribute("data-correct", question.correct.toUpperCase()); // Corrected here: standardizing correct answer to uppercase
 
           let optionsHTML = "";
           for (let option in question.options) {
@@ -746,12 +745,12 @@
 
           const explanationHTML = question.explanation
             ? `<div class="explanation-dropdown">
-                 <button class="explanation-btn">ব্যাখ্যা দেখো</button>
-                 <div class="explanation-content">
-                   <div class="explanation-label">ব্যাখ্যা:</div>
-                   ${question.explanation}
-                 </div>
-               </div>`
+                   <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                   <div class="explanation-content">
+                     <div class="explanation-label">ব্যাখ্যা:</div>
+                     ${question.explanation}
+                   </div>
+                 </div>`
             : "";
 
           questionDiv.innerHTML = `
@@ -911,6 +910,16 @@
         console.log("Chart initialized");
       }
 
+      function updateChart(correct, wrong, unanswered) {
+        console.log("Updating chart data");
+        if (chartInstance) {
+          chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+          chartInstance.update();
+        } else {
+          console.error("Chart instance not found!");
+        }
+      }
+
       function filterQuestions(type) {
         console.log(`Filtering questions by type: ${type}`);
         document.querySelectorAll(".question-container").forEach((question) => {
@@ -928,8 +937,8 @@
         document.getElementById("confirmPopup").style.display = "block";
       }
 
-      function autoSubmitScore() {
-        console.log("Auto-submitting score");
+      function confirmSubmit() {
+        console.log("Confirming submission and processing score");
         stopTimer();
         let score = 0,
           total = questions.length,
@@ -944,7 +953,7 @@
 
           if (selectedOption) {
             answered++;
-            let chosenAnswer = selectedOption.getAttribute("data-option");
+            let chosenAnswer = selectedOption.getAttribute("data-option").toUpperCase(); // Corrected here: standardizing chosen answer to uppercase
             if (chosenAnswer === correctAnswer) {
               score += 1;
               correct++;
@@ -960,161 +969,79 @@
           }
         });
 
+        // Populate score popup with results
+        document.getElementById("totalQuestions").innerText = toBengaliNumber(total);
+        document.getElementById("answered").innerText = toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText = toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText = toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText = toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(score.toFixed(2));
+
+        // Populate hidden form fields for submission
         const userID = sessionStorage.getItem("userID") || "anonymous";
-        const formData = new FormData();
-        formData.append("userID", userID);
-        formData.append("finalScore", score.toFixed(2));
-        formData.append("correctAnswers", correct);
-        formData.append("wrongAnswers", wrong);
-        formData.append("unanswered", unanswered);
-
-        const url = "https://formspree.io/f/xpwy";
-        navigator.sendBeacon(url, formData);
-        console.log("Auto-submission sent via sendBeacon for userID:", userID);
-      }
-
-      function confirmSubmit() {
-        console.log("Confirming submission");
-        document.getElementById("confirmPopup").style.display = "none";
-        stopTimer();
-        let score = 0,
-          total = questions.length,
-          answered = 0,
-          correct = 0,
-          wrong = 0,
-          unanswered = 0;
-
-        document
-          .querySelectorAll(".question-container")
-          .forEach((question, index) => {
-            let correctAnswer = question.getAttribute("data-correct");
-            let selectedOption = question.querySelector(".option.selected");
-
-            if (selectedOption) {
-              answered++;
-              let chosenAnswer = selectedOption.getAttribute("data-option");
-              if (chosenAnswer === correctAnswer) {
-                selectedOption
-                  .querySelector(".option-text")
-                  .classList.add("correct-text");
-                score += 1;
-                correct++;
-                question.setAttribute("data-status", "correct");
-              } else {
-                selectedOption
-                  .querySelector(".option-text")
-                  .classList.add("incorrect-text");
-                question
-                  .querySelector(
-                    `[data-option="${correctAnswer}"] .option-text`
-                  )
-                  .classList.add("correct-text");
-                score -= 0.25;
-                wrong++;
-                question.setAttribute("data-status", "wrong");
-              }
-            } else {
-              question
-                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
-                .classList.add("unattempted-text");
-              unanswered++;
-              question.setAttribute("data-status", "unanswered");
-            }
-            question.style.display = "block";
-
-            const explanationDropdown = question.querySelector(
-              ".explanation-dropdown"
-            );
-            if (explanationDropdown) {
-              explanationDropdown.classList.add("visible");
-            }
-          });
-
-        const chartContainer = document.querySelector(".chart-container");
-        chartContainer.classList.add("visible");
-        if (!chartInstance) {
-          initializeChart();
-        }
-        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
-        chartInstance.update();
-        console.log("Chart updated with data:", [correct, wrong, unanswered]);
-
-        const userID = sessionStorage.getItem("userID") || "anonymous";
-        document.getElementById("totalQuestions").innerText =
-          toBengaliNumber(total);
-        document.getElementById("answered").innerText =
-          toBengaliNumber(answered);
-        document.getElementById("correctAnswers").innerText =
-          toBengaliNumber(correct);
-        document.getElementById("wrongAnswers").innerText =
-          toBengaliNumber(wrong);
-        document.getElementById("unanswered").innerText =
-          toBengaliNumber(unanswered);
-        document.getElementById("finalScore").innerText = toBengaliNumber(
-          score.toFixed(2)
-        );
-
         document.getElementById("formUserID").value = userID;
         document.getElementById("formFinalScore").value = score.toFixed(2);
         document.getElementById("formCorrectAnswers").value = correct;
         document.getElementById("formWrongAnswers").value = wrong;
         document.getElementById("formUnanswered").value = unanswered;
 
-        document.getElementById("submitBtn").style.display = "none";
-
+        // Hide confirm popup and show score popup
+        document.getElementById("confirmPopup").style.display = "none";
         document.getElementById("scorePopup").style.display = "block";
 
-        const form = document.getElementById("scoreForm");
-        fetch(form.action, {
-          method: "POST",
-          body: new FormData(form),
-          headers: {
-            Accept: "application/json",
-          },
-        })
-          .then((response) => {
-            if (response.ok) {
-              console.log("Form submitted successfully");
-              form.reset();
-            } else {
-              console.error("Form submission failed:", response.statusText);
+        // **The fix:** Make the chart visible
+        document.querySelector(".chart-container").classList.add("visible");
+
+        // Initialize and update the chart
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+        initializeChart();
+        updateChart(correct, wrong, unanswered);
+
+        // Show correct answers and explanations
+        showResults();
+        console.log("Score and results processed successfully");
+      }
+      
+      function showResults() {
+        console.log("Showing exam results");
+        document.getElementById("submitBtn").style.display = "none";
+        const questionsContainer = document.getElementById("exam");
+        questionsContainer.classList.add("results");
+
+        document.querySelectorAll(".question-container").forEach(question => {
+          question.classList.add("locked");
+          const correctAnswer = question.getAttribute("data-correct");
+          const selectedOption = question.querySelector(".option.selected");
+          const explanationDropdown = question.querySelector(".explanation-dropdown");
+
+          if (selectedOption) {
+            selectedOption.classList.add("incorrect-text");
+            const chosenOption = selectedOption.getAttribute("data-option").toUpperCase();
+            if (chosenOption === correctAnswer) {
+              selectedOption.classList.add("correct-text");
             }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
+          }
+
+          question.querySelectorAll(".option").forEach(option => {
+            const optionValue = option.getAttribute("data-option").toUpperCase();
+            if (optionValue === correctAnswer) {
+              option.classList.add("correct-text");
+            }
           });
+          if (explanationDropdown) {
+            explanationDropdown.classList.add("visible");
+          }
+        });
       }
 
       function cancelSubmit() {
-        console.log("Canceling submission");
+        console.log("Submission cancelled");
         document.getElementById("confirmPopup").style.display = "none";
       }
 
-      document
-        .getElementById("submitBtn")
-        .addEventListener("click", function () {
-          console.log("Submit button clicked");
-          showConfirmPopup();
-        });
-
-      function closePopup() {
-        console.log("Closing score popup");
-        const scorePopup = document.getElementById("scorePopup");
-        scorePopup.classList.add("slide-out");
-        setTimeout(() => {
-          scorePopup.style.display = "none";
-          scorePopup.classList.remove("slide-out");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }, 500);
-      }
-
-      document
-        .getElementById("scoreForm")
-        .addEventListener("submit", function (event) {
-          event.preventDefault();
-          console.log("Score form submitted");
-          closePopup();
-        });
+      document.getElementById("submitBtn").addEventListener("click", showConfirmPopup);
     </script>
   </body>
 </html>
